@@ -4,11 +4,18 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 from collections import Counter
 from datetime import date
 from urllib.parse import urlparse
 
 from . import dates, schema
+
+
+_VERSION_RE = re.compile(
+    r'''^version:\s*(?:"([^"]+)"|'([^']+)'|(\S+))\s*$''',
+    re.MULTILINE,
+)
 
 
 def _skill_version() -> str:
@@ -17,9 +24,11 @@ def _skill_version() -> str:
     sync.sh does not copy .claude-plugin/ to non-cache install dirs (~/.codex/skills,
     ~/.agents/skills, Hermes), so SKILL.md frontmatter is the fallback that keeps the
     badge from emitting v? on those installs. Returns "?" only if both sources are missing.
-    """
-    import re
 
+    A corrupt manifest at one ancestor does not shadow a valid manifest at a deeper one
+    (continue, not break). YAML frontmatter accepts double-quoted, single-quoted, or
+    unquoted version scalars.
+    """
     here = pathlib.Path(__file__).resolve()
     for parent in here.parents:
         manifest = parent / ".claude-plugin" / "plugin.json"
@@ -27,14 +36,18 @@ def _skill_version() -> str:
             try:
                 return json.loads(manifest.read_text()).get("version", "?")
             except (json.JSONDecodeError, OSError):
-                break
+                continue
 
+    # No manifest found at any ancestor — fall back to SKILL.md frontmatter.
     for parent in here.parents:
         skill_md = parent / "SKILL.md"
         if skill_md.is_file():
-            match = re.search(r'^version:\s*"([^"]+)"\s*$', skill_md.read_text(), re.MULTILINE)
+            try:
+                match = _VERSION_RE.search(skill_md.read_text())
+            except (OSError, UnicodeDecodeError):
+                break
             if match:
-                return match.group(1)
+                return next(g for g in match.groups() if g is not None)
             break
     return "?"
 

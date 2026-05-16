@@ -15,7 +15,7 @@ COMMON_TARGETS=(
   # against the working tree so /last30days reflects local dev without
   # waiting for a release. Do NOT add ~/.claude/skills/last30days - it
   # creates a duplicate slash-command entry alongside the plugin version.
-  "$HOME/.claude/plugins/cache/last30days-skill/last30days/3.2.1"
+  "$HOME/.claude/plugins/cache/last30days-skill/last30days/3.2.2"
   "$HOME/.agents/skills/last30days"
   "$HOME/.codex/skills/last30days"
 )

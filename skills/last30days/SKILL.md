@@ -1,6 +1,6 @@
 ---
 name: last30days
-version: "3.2.1"
+version: "3.2.2"
 description: "Research what people actually say about any topic in the last 30 days. Pulls posts and engagement from Reddit, X, YouTube, TikTok, Hacker News, Polymarket, GitHub, and the web."
 argument-hint: 'last30days nvidia earnings reaction | last30days AI video tools | last30days what users want in react'
 allowed-tools: Bash, Read, Write, AskUserQuestion, WebSearch
@@ -69,6 +69,7 @@ Before reading anything else in this file, check whether you loaded SKILL.md fro
 ```bash
 CLAUDE_CACHE_LATEST=$(ls -d "$HOME/.claude/plugins/cache/last30days-skill/last30days"/*/ 2>/dev/null | sort -V | tail -1)
 CLAUDE_CACHE_LATEST="${CLAUDE_CACHE_LATEST%/}"
+echo "CLAUDE_CACHE_LATEST=$CLAUDE_CACHE_LATEST"
 ```
 
 If the SKILL.md path you just Read contains `/.claude/plugins/marketplaces/` AND `$CLAUDE_CACHE_LATEST` is non-empty, STOP and re-read `$CLAUDE_CACHE_LATEST/skills/last30days/SKILL.md` before proceeding. Otherwise the SKILL.md you have is fine — continue.
@@ -233,7 +234,7 @@ If your Bash call to `last30days.py` does NOT include the FULL pre-flight checkl
 
 ---
 
-# last30days v3.2.1: Research Any Topic from the Last 30 Days
+# last30days v3.2.2: Research Any Topic from the Last 30 Days
 
 > **Permissions overview:** Reads public web/platform data and optionally saves research briefings to `LAST30DAYS_MEMORY_DIR` (defaults to `~/Documents/Last30Days`). X/Twitter search uses optional user-provided tokens (AUTH_TOKEN/CT0 env vars). Bluesky search uses optional app password (BSKY_HANDLE/BSKY_APP_PASSWORD env vars - create at bsky.app/settings/app-passwords). All credential usage and data writes are documented in the [Security & Permissions](#security--permissions) section.
 
@@ -582,6 +583,30 @@ When the user asks "X vs Y" (or "X vs Y vs Z"), the engine fans out N full `pipe
 
 **Invocation:**
 ```bash
+# Comparison mode skips Step 1, so resolve SKILL_ROOT inline here (same precedence
+# walk as Step 1 — keep the two in sync if you edit either).
+SKILL_ROOT=""
+CLAUDE_PLUGIN_ROOT="$(ls -d "$HOME/.claude/plugins/cache/last30days-skill/last30days/"*/ 2>/dev/null | sort -V | tail -1)"
+CLAUDE_PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT%/}"
+if [ -n "$CLAUDE_PLUGIN_ROOT" ]; then
+  if [ -f "$CLAUDE_PLUGIN_ROOT/skills/last30days/scripts/last30days.py" ]; then
+    SKILL_ROOT="$CLAUDE_PLUGIN_ROOT/skills/last30days"
+  elif [ -f "$CLAUDE_PLUGIN_ROOT/scripts/last30days.py" ]; then
+    SKILL_ROOT="$CLAUDE_PLUGIN_ROOT"
+  fi
+fi
+if [ -z "$SKILL_ROOT" ] || [ ! -f "$SKILL_ROOT/scripts/last30days.py" ]; then
+  for dir in \
+      "$HOME/.codex/skills/last30days" \
+      "$HOME/.agents/skills/last30days" \
+      "./skills/last30days" \
+      "./.skills/last30days" \
+      "." \
+      "${GEMINI_EXTENSION_DIR:-}"; do
+    [ -n "$dir" ] && [ -f "$dir/scripts/last30days.py" ] && SKILL_ROOT="$dir" && break
+  done
+fi
+
 "${LAST30DAYS_PYTHON}" "${SKILL_ROOT}/scripts/last30days.py" "{TOPIC_A} vs {TOPIC_B} vs {TOPIC_C}" \
   --emit=compact \
   --save-dir="${LAST30DAYS_MEMORY_DIR}" \
@@ -873,7 +898,8 @@ Store your plan as `QUERY_PLAN_JSON` - you'll pass it to the script in the next 
 # then common per-harness skill dirs, then a repo checkout.
 SKILL_ROOT=""
 
-# 1. Claude Code plugin cache (versioned). Both shapes ship in the wild — pick the freshest.
+# 1. Claude Code plugin cache (versioned, sort -V picks freshest). Two cache layouts ship in the wild:
+#    nested ({cache}/{version}/skills/last30days/scripts/...) and flat ({cache}/{version}/scripts/...).
 CLAUDE_PLUGIN_ROOT="$(ls -d "$HOME/.claude/plugins/cache/last30days-skill/last30days/"*/ 2>/dev/null | sort -V | tail -1)"
 CLAUDE_PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT%/}"
 if [ -n "$CLAUDE_PLUGIN_ROOT" ]; then

@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Rename "Digg AI 1000" to just "Digg" in user-facing output (footer line, source label, inline-quote suffix, why_relevant, container attribution). Internal references to the upstream Digg AI 1000 product remain in code comments and docstrings.
 - Bump `POSTS_PER_CLUSTER` from 3 to 5 and the render-side display limit from 2 to 3 to match the per-source enrichment caps used by Reddit, HN, YouTube, TikTok, and GitHub. The previous 3/2 caps routinely truncated cluster context (e.g. dropped a Jason Calacanis quote tweet on a `cli-printing-press` run).
+- Rewrite SKILL.md path resolution. STEP 0 narrows from a global canonical-path enforcement to a Claude-Code-marketplaces-only stale-clone guard. Step 1 SKILL_ROOT resolver walks a single precedence list (Claude plugin cache, then `~/.codex/skills/`, `~/.agents/skills/`, repo checkout, `./.skills/last30days` for `npx skills add`, CWD, Gemini). Adds SKILL.md frontmatter fallback to `render.py::_skill_version` so the badge no longer prints `v?` on installs that don't include `.claude-plugin/plugin.json`.
+
+### Removed
+
+- **BREAKING for Codex native-plugin users:** `.codex-plugin/plugin.json` and the matching SKILL_ROOT resolver branch in SKILL.md Step 1. Codex users should install via `npx skills add mvanhorn/last30days-skill` or copy the skill to `~/.codex/skills/last30days/` (which `sync.sh` already writes to in this repo).
 
 ## [3.2.0] - 2026-05-09
 

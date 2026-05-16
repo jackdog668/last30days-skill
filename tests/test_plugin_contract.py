@@ -22,6 +22,12 @@ def _skill_version() -> str:
 
 
 class TestPluginContract(unittest.TestCase):
+    def test_codex_plugin_scaffold_stays_removed(self) -> None:
+        # .codex-plugin/ was removed in the resolver-collapse refactor; Codex users
+        # install via `npx skills add` or `~/.codex/skills/`. A reintroduction would
+        # silently fork the install surface.
+        self.assertFalse((ROOT / ".codex-plugin").exists())
+
     def test_versions_match_across_manifests(self) -> None:
         pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
         version = pyproject["project"]["version"]
