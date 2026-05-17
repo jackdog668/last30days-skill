@@ -603,6 +603,11 @@ def _get_topic_by_id(topic_id: int) -> Optional[Dict[str, Any]]:
 
 
 def _sightings_by_url(sightings: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    """Index sightings by stable URL identity for run-to-run delta comparisons.
+
+    URL-less sightings are intentionally excluded because there is no stable
+    cross-run identity to classify them as new, continued, or dropped.
+    """
     return {
         sighting["source_url"]: sighting
         for sighting in sightings
@@ -625,7 +630,6 @@ def _delta_source_counts(
     for group_name, group in findings.items():
         for finding in group:
             source = finding.get("source") or "unknown"
-            counts.setdefault(source, {"new": 0, "continued": 0, "dropped": 0})
             counts[source][group_name] += 1
     return counts
 
