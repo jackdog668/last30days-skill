@@ -33,8 +33,13 @@ load_env_vars() {
       [[ -z "$key" ]] && continue
       key=$(echo "$key" | xargs)
       value=$(echo "$value" | xargs | sed 's/^["'\''"]//;s/["'\''"]$//')
+      # Strip inline comments (# preceded by whitespace) to prevent
+      # command substitution in backtick-containing comments
+      value="${value%%[[:space:]]#*}"
       if [[ -n "$key" && -n "$value" ]]; then
-        eval "ENV_${key}=\"${value}\""
+        # printf -v writes via assignment semantics (global from inside a
+        # function), works on macOS's /bin/bash 3.2 — `declare -g` is 4.2+.
+        printf -v "ENV_${key}" '%s' "$value"
       fi
     done < "$file"
   fi
